@@ -1,9 +1,11 @@
 package contacts.app;
 
 
-import contacts.person.Person;
-import contacts.personException.PersonNotFoundException;
-import contacts.personProperties.Property;
+import contacts.app.editor.OrganizationEditor;
+import contacts.app.editor.PersonEditor;
+import contacts.exceptions.ContactNotFoundException;
+import contacts.contactTypes.Contact;
+import contacts.exceptions.NoSuchContactTypeException;
 import contacts.storage.Storage;
 import contacts.typeOfOperations.Operations;
 
@@ -12,10 +14,16 @@ import java.util.Scanner;
 public class App {
     private final Storage storage;
     private final Scanner scan;
+    private final PersonEditor personEditor;
+    private final OrganizationEditor orgEditor;
+    private final ContactMaker contactMaker;
 
     public App() {
         storage = new Storage();
         scan = new Scanner(System.in);
+        personEditor = new PersonEditor();
+        orgEditor = new OrganizationEditor();
+        contactMaker = new ContactMaker();
     }
 
     public void run() {
@@ -24,9 +32,10 @@ public class App {
         do {
             printMenu();
             try {
-                typeOfOperation = Operations.valueOf(scan.next().toUpperCase());
+                String operation = scan.nextLine().trim().toUpperCase();
+                typeOfOperation = Operations.valueOf(operation);
             } catch (IllegalArgumentException illegalArgumentException) {
-                System.out.println("There is no such operation!");
+                System.out.println("There is no such operation!\n");
                 continue;
             }
             switch (typeOfOperation) {
@@ -34,10 +43,10 @@ public class App {
                     flag = false;
                     break;
                 case ADD:
-                    addPerson();
+                    addContact();
                     break;
-                case LIST:
-                    printList();
+                case INFO:
+                    showInfo();
                     break;
                 case COUNT:
                     printCount();
@@ -48,19 +57,29 @@ public class App {
                 case EDIT:
                     edit();
             }
+            System.out.println();
         } while (flag);
 
     }
 
     private void printMenu() {
-        System.out.print("Enter action (add, remove, edit, count, list, exit): > ");
+        System.out.print("Enter action (add, remove, edit, count, info, exit): > ");
     }
 
-    private void printList() {
+    private void showInfo() {
         if (storage.getCount() == 0) {
             System.out.println("there is nothing in the list");
         } else {
-            storage.printPersonList();
+            storage.printContactList();
+            System.out.print("Enter index to show info: > ");
+            int id = scan.nextInt();
+            scan.nextLine();
+            try {
+                storage.printInfo(id - 1);
+            } catch (ContactNotFoundException e) {
+                e.printStackTrace();
+                System.out.println();
+            }
         }
     }
 
@@ -71,85 +90,49 @@ public class App {
     private void remove() {
         if (storage.getCount() != 0) {
             try {
-                storage.printPersonList();
+                storage.printContactList();
                 System.out.print("Select a record: > ");
                 storage.remove(scan.nextInt());
                 System.out.println("The record removed!");
-            } catch (PersonNotFoundException e) {
+            } catch (ContactNotFoundException e) {
                 e.printStackTrace();
+                System.out.println();
             }
+            scan.nextLine();
         } else {
             System.out.println("No records to remove!");
         }
     }
 
-    private void addPerson() {
-        System.out.print("Enter the name: > ");
-        String fistName = scan.next();
-        System.out.print("Enter the surname: > ");
-        String lastName = scan.next();
-        scan.nextLine();
-        System.out.print("Enter the number: > ");
-        String number = scan.nextLine().trim();
-        Person person = new Person.PersonBuilder()
-                .setFirstName(fistName)
-                .setLastName(lastName)
-                .setPhoneNumber(number)
-                .build();
-        if (!person.hasNumber()) {
-            System.out.println("Wrong number format!");
+    private void addContact() {
+        try {
+            storage.add(contactMaker.makeContact());
+        } catch (NoSuchContactTypeException e) {
+            e.printStackTrace();
         }
-        storage.add(person);
         System.out.println("The record added.");
     }
 
     private void edit() {
         if (storage.getCount() == 0) {
-            System.out.println("No records to edit!");
+            System.out.println("No records to edit");
         } else {
-            storage.printPersonList();
+            storage.printContactList();
             System.out.print("Select a record: > ");
             int id = scan.nextInt();
+            scan.nextLine();
             try {
-                Person person = storage.getForEditing(id);
-
-                System.out.print("Select a field (name, surname, number): > ");
-                Property property;
-                try {
-                    property = Property.valueOf(scan.next().toUpperCase());
-                } catch (IllegalArgumentException illegalArgumentException) {
-                    System.out.println("There is no such field!");
-                    return;
+                Contact contact = storage.getForEditing(id);
+                if (contact.isPerson()) {
+                    personEditor.editPerson(contact);
+                } else {
+                    orgEditor.editOrg(contact);
                 }
-                changeProperty(property, person);
-            } catch (PersonNotFoundException e) {
+            } catch (ContactNotFoundException e) {
                 e.printStackTrace();
+                System.out.println();
             }
-
         }
     }
 
-    private void changeProperty(Property property, Person person) {
-        switch (property) {
-            case NAME:
-                System.out.print("Enter name: > ");
-                String name = scan.next();
-                person.setFirstName(name);
-                break;
-            case NUMBER:
-                scan.nextLine();
-                System.out.print("Enter number: > ");
-                String number = scan.nextLine();
-                person.setPhoneNumber(number);
-                if (!person.hasNumber()) {
-                    System.out.println("Wrong number format!");
-                }
-                break;
-            case SURNAME:
-                System.out.print("Enter surname: > ");
-                String surname = scan.next();
-                person.setLastName(surname);
-        }
-        System.out.println("The record updated!");
-    }
 }

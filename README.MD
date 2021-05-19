@@ -36,6 +36,16 @@ it holds two exception classes(contact not found and no such contact type)
   typeOfOperation package:
   it contains enum with actions available for user
 
-
-
+____________________________
+Stage 4:
+  
+Added serialization, deserialization and search by contact fields.  
+The structure of packages has been changed.    
+  
+app package contains all the business logic.
+In this package, almost every option for dealing with a contact has its own package and a class that implements its logic.
+  
+contactFactory package creates contacts. One class from there is used as simple factory idiom 
+  
+A class was added to storage package. The class is SerializationUtils.java. The name speaks for itself
 

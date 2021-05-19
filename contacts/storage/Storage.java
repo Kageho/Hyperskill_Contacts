@@ -3,13 +3,16 @@ package contacts.storage;
 import contacts.exceptions.ContactNotFoundException;
 import contacts.contactTypes.Contact;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
+/* contacts will be serialized  */
+public class Storage implements Serializable {
 
-public class Storage {
-
-    private static final String NO_SUCH_CONTACT = "There is no such contact!";
-    private List<Contact> contacts;
+    public static final String LIST_IS_EMPTY = "The list is empty!";
+    private static final long serialVersionUID = 1L;
+    private final List<Contact> contacts;
 
     public Storage() {
         contacts = new ArrayList<>();
@@ -19,40 +22,46 @@ public class Storage {
         contacts.add(contact);
     }
 
-    public void remove(int id) throws ContactNotFoundException {
-        if (id > 0 && id <= contacts.size()) {
-            contacts.remove(id - 1);
-        } else {
-            throw new ContactNotFoundException(NO_SUCH_CONTACT);
-        }
-    }
-
     public int getCount() {
         return contacts.size();
     }
 
     public void printContactList() {
-        int i = 1;
-        for (var e : contacts) {
-            System.out.printf("%d. %s\n", i++, e.getName());
-        }
+        IntStream.rangeClosed(1, contacts.size())
+                .forEach(e -> System.out.printf("%d. %s\n", e, contacts.get(e - 1).getName()));
     }
 
     public void printInfo(int id) throws ContactNotFoundException {
-        if (id >= 0 && id < contacts.size()) {
+        if (isValidIndex(id)) {
             System.out.println(contacts.get(id));
         } else {
-            throw new ContactNotFoundException(NO_SUCH_CONTACT);
+            throw new ContactNotFoundException();
         }
+    }
+
+    public void delete(int id) throws ContactNotFoundException {
+        if (isValidIndex(id)) {
+            contacts.remove(id);
+            System.out.println("The record has deleted!");
+        } else {
+            throw new ContactNotFoundException();
+        }
+    }
+
+    public boolean isValidIndex(int id) {
+        return contacts.size() > id && id >= 0;
     }
 
     public Contact getForEditing(int id) throws ContactNotFoundException {
-        if (id > 0 && id <= contacts.size()) {
-            return contacts.get(id - 1);
+        if (isValidIndex(id)) {
+            return contacts.get(id);
         } else {
-            throw new ContactNotFoundException(NO_SUCH_CONTACT);
+            throw new ContactNotFoundException();
         }
     }
 
+    public List<Contact> getContacts() {
+        return contacts;
+    }
 }
 

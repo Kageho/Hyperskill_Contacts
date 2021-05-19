@@ -2,15 +2,23 @@ package contacts.contactTypes.organization;
 
 import contacts.contactTypes.Contact;
 
+import java.util.List;
+import java.util.Scanner;
+
 public class Organization extends Contact {
     private String address;
+    private static final List<String> nameOfFields;
+
+    static {
+        nameOfFields = List.of("name", "address", "number");
+    }
 
     private Organization(String name, String address, String phone) {
-        super(name, phone, false);
+        super(name, phone);
         this.address = address;
     }
 
-    public void setAddress(String address) {
+    private void setAddress(String address) {
         this.address = address;
     }
 
@@ -48,6 +56,42 @@ public class Organization extends Contact {
         return info.toString();
     }
 
+    @Override
+    public List<String> getNameOfFields() {
+        return nameOfFields;
+    }
+
+    @Override
+    public void editField(String fieldName, String value) {
+        organizationProperty property;
+        try {
+            property = organizationProperty.valueOf(fieldName.toUpperCase());
+        } catch (IllegalArgumentException illegalArgumentException) {
+            System.out.println("There is no such field!");
+            return;
+        }
+        switch (property) {
+            case NAME:
+                setName(value);
+                break;
+            case ADDRESS:
+                setAddress(value);
+                break;
+            case NUMBER:
+                setPhoneNumber(value);
+                if (!hasNumber()) {
+                    System.out.println("Wrong number format!");
+                }
+        }
+        newUpdatedTime();
+        System.out.println("The record updated!");
+    }
+
+    @Override
+    public String[] getValuesOfFields() {
+        return new String[]{name, address, phone};
+    }
+
     public static class OrganizationBuilder {
         private String address;
         private String name;
@@ -59,7 +103,7 @@ public class Organization extends Contact {
         }
 
         public OrganizationBuilder setName(String name) {
-            this.name = name;
+            this.name = name.isBlank() ? getNonBlankName(new Scanner(System.in), name) : name;
             return this;
         }
 
@@ -72,5 +116,4 @@ public class Organization extends Contact {
             return new Organization(name, address, phone);
         }
     }
-
 }

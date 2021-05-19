@@ -1,31 +1,37 @@
 package contacts.contactTypes.person;
 
 import contacts.contactTypes.Contact;
+import contacts.contactTypes.person.dateValidator.DateValidatorRegex;
+
+import java.util.List;
+import java.util.Scanner;
 
 public class Person extends Contact {
     private String surname;
     private String birthDate;
     private String gender;
+    private static final List<String> nameOfFields;
 
+    static {
+        nameOfFields = List.of("name", "surname", "birth", "gender", "number");
+    }
 
     private Person(String name, String surname, String birthDate, String gender, String phone) {
-        super(name, phone, true);
-
+        super(name, phone);
         this.birthDate = birthDate;
-
         this.gender = gender;
         this.surname = surname;
     }
 
-    public void setSurname(String surname) {
+    private void setSurname(String surname) {
         this.surname = surname;
     }
 
-    public void setBirthDate(String birthDate) {
-        this.birthDate = birthDate;
+    private void setBirthDate(String birthDate) {
+        this.birthDate = checkBirthDate(birthDate);
     }
 
-    public void setGender(String gender) {
+    private void setGender(String gender) {
         this.gender = gender;
     }
 
@@ -60,6 +66,65 @@ public class Person extends Contact {
     }
 
     @Override
+    public List<String> getNameOfFields() {
+        return nameOfFields;
+    }
+
+
+    @Override
+    public void editField(String fieldName, String value) {
+        personProperty property;
+        try {
+            property = personProperty.valueOf(fieldName.toUpperCase());
+        } catch (IllegalArgumentException illegalArgumentException) {
+            System.out.println("There is no such field!");
+            return;
+        }
+        switch (property) {
+            case NAME:
+                setName(value);
+                break;
+            case NUMBER:
+                setPhoneNumber(value);
+                if (hasNumber()) {
+                    System.out.println("Wrong number format!");
+                }
+                break;
+            case SURNAME:
+                setSurname(value);
+                break;
+            case GENDER:
+                setGender(value);
+                break;
+            case BIRTH:
+                setBirthDate(value);
+        }
+        System.out.println("The record updated!");
+        // contact is updated
+        newUpdatedTime();
+    }
+    // method works until the date gets valid format
+    // or the date is blank
+    private static String checkBirthDate(String birth) {
+        if (birth.isBlank()) {
+            System.out.println("Bad birth date!");
+            return birth;
+        }
+        while (!DateValidatorRegex.isValid(birth)) {
+            System.out.println("Birth date is invalid");
+            System.out.println("Enter date in yyyy.mm.dd format!");
+            Scanner scan = new Scanner(System.in);
+            birth = scan.nextLine();
+        }
+        return birth;
+    }
+
+    @Override
+    public String[] getValuesOfFields() {
+        return new String[]{name, surname, birthDate, gender, phone};
+    }
+
+    @Override
     public String toString() {
         StringBuilder info = new StringBuilder();
         info.append("Name: ").append(name).append("\n");
@@ -80,7 +145,7 @@ public class Person extends Contact {
         private String phone;
 
         public PersonBuilder setName(String name) {
-            this.name = name;
+            this.name = name.isBlank() ? getNonBlankName(new Scanner(System.in), name) : name;
             return this;
         }
 
@@ -90,7 +155,7 @@ public class Person extends Contact {
         }
 
         public PersonBuilder setBirthDate(String birthDate) {
-            this.birthDate = birthDate;
+            this.birthDate = checkBirthDate(birthDate);
             return this;
         }
 
